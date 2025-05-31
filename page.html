@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สุดยอดคำถาม</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #4CAF50; /* เขียวหลัก */
+            --light-green: #8BC34A; /* เขียวอ่อนสำหรับปุ่ม "ไม่หล่อ" */
+            --light-gray: #f0f0f0;    /* เทาอ่อนสำหรับพื้นหลัง */
+            --dark-gray: #333;        /* เทาเข้มสำหรับข้อความ */
+            --text-color: #555;       /* สีข้อความทั่วไป */
+            --border-radius: 8px;
+            --shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            --button-height: 50px; /* กำหนดความสูงมาตรฐานของปุ่ม */
+            --button-width: 200px; /* กำหนดความกว้างมาตรฐานของปุ่ม */
+        }
+
+        body {
+            font-family: 'Sarabun', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: var(--light-gray);
+            color: var(--text-color);
+            transition: background-color 0.3s ease;
+            overflow: hidden; /* ป้องกัน scrollbar หากปุ่มหลุดออกจากจอ */
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            animation: fadeIn 1s ease-out;
+            position: relative; /* สำหรับ popup */
+            box-sizing: border-box; /* ให้ padding นับรวมใน width/height */
+            z-index: 10; /* ให้ container อยู่บนปุ่มที่ลอยอยู่ */
+        }
+
+        .logo {
+            display: block;
+            max-width: 150px; /* ปรับขนาดตามต้องการ */
+            height: auto;
+            margin: 20px auto 30px auto; /* จัดกลางและมีระยะห่างด้านบนและล่าง */
+        }
+
+        h1 {
+            color: var(--dark-gray);
+            margin-bottom: 30px;
+            font-weight: 700;
+        }
+
+        .choices {
+            display: flex;
+            flex-direction: column;
+            gap: 20px; /* ระยะห่างปกติสำหรับปุ่มใน flex container */
+            margin-top: 20px;
+        }
+
+        button {
+            /* สไตล์ทั่วไปของปุ่ม */
+            color: white;
+            padding: 15px 25px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 1.1em;
+            cursor: pointer;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            box-shadow: var(--shadow);
+            height: var(--button-height);
+            width: 100%; /* ให้ปุ่มกว้างเต็มพื้นที่ตามปกติ */
+            box-sizing: border-box;
+        }
+
+        /* Style for the "เอ๋อ" button */
+        .choices button:first-child {
+            background-color: var(--light-green);
+        }
+
+        .choices button:first-child:hover {
+            background-color: #7CB342;
+        }
+
+        /* สไตล์สำหรับปุ่ม "หล่อ" ที่จะหลบหนี */
+        #handsomeButton {
+            background-color: var(--primary-green);
+            position: fixed; /* ทำให้ปุ่มลอยตัวโดยอ้างอิงจาก viewport */
+            /* ตำแหน่งเริ่มต้นจะถูกกำหนดใน JS */
+            transition: left 0.1s ease-out, top 0.1s ease-out, background-color 0.3s ease, transform 0.2s ease; /* ปรับเวลา transition ให้เร็วขึ้น */
+            z-index: 1; /* ให้ปุ่มอยู่เหนือพื้นหลัง แต่ต่ำกว่า popup */
+            width: var(--button-width); /* กำหนดความกว้างคงที่ */
+            left: 50%; /* ตำแหน่งเริ่มต้นกึ่งกลาง */
+            transform: translateX(-50%); /* ปรับให้ตรงกึ่งกลาง */
+            top: auto; /* ไม่ใช้ top ในตอนแรก */
+            bottom: 40px; /* ตำแหน่งเริ่มต้นด้านล่าง */
+        }
+
+        #handsomeButton:hover {
+            background-color: #45a049;
+            transform: translateY(-3px); /* Tween animation on hover */
+        }
+
+        #handsomeButton:active {
+            transform: translateY(0);
+        }
+
+        /* Popup Styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .popup-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .popup-content {
+            background-color: #fff;
+            padding: 30px 40px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+            transform: scale(0.8);
+            opacity: 0;
+            transition: transform 0.3s ease, opacity 0.3s ease;
+            max-width: 350px;
+            width: 80%;
+        }
+
+        .popup-overlay.show .popup-content {
+            transform: scale(1);
+            opacity: 1;
+        }
+
+        .popup-content h2 {
+            color: var(--primary-green);
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .popup-content button {
+            background-color: var(--dark-gray);
+            margin-top: 20px;
+        }
+
+        .popup-content button:hover {
+            background-color: #555;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>สุดยอดคำถาม</h1>
+        <img src="flim.png" alt="โลโก้" class="logo">
+        <h1>ฟิล์มดูเป็นอย่างไรรร?</h1>
+        <div class="choices">
+            <button onclick="handleNotHandsomeClick()">เอ๋อ</button> </div>
+    </div>
+
+    <button id="handsomeButton" onclick="showPopup('handsome')">หล่อ</button>
+
+    <div class="popup-overlay" id="notHandsomePopup">
+        <div class="popup-content">
+            <h2>T_T</h2>
+            <button onclick="hidePopup('not-handsome')">ปิด</button>
+        </div>
+    </div>
+
+    <div class="popup-overlay" id="handsomePopup">
+        <div class="popup-content">
+            <h2>เก่งมากๆๆๆๆ</h2>
+            <button onclick="hidePopup('handsome')">ปิด</button>
+        </div>
+    </div>
+
+    <script>
+        const handsomeButton = document.getElementById('handsomeButton');
+        const container = document.querySelector('.container');
+
+        // ตำแหน่งเริ่มต้นของปุ่ม "หล่อ" (กึ่งกลางล่างของ viewport)
+        const initialButtonBottom = 40; // 40px จากขอบล่าง
+        const initialButtonLeft = '50%';
+        const initialButtonTransform = 'translateX(-50%)';
+
+        // ตั้งค่าตำแหน่งเริ่มต้น
+        handsomeButton.style.bottom = `${initialButtonBottom}px`;
+        handsomeButton.style.left = initialButtonLeft;
+        handsomeButton.style.transform = initialButtonTransform;
+
+        // กำหนดตำแหน่งมุมทั้ง 4 ของหน้าจอ (ใช้ padding 20px จากขอบ)
+        const cornerPositions = [
+            { top: 20, left: 20, transform: 'none' }, // Top-left
+            { top: 20, right: 20, transform: 'none' }, // Top-right
+            { bottom: 20, left: 20, transform: 'none' }, // Bottom-left
+            { bottom: 20, right: 20, transform: 'none' } // Bottom-right
+        ];
+
+        let lastCornerIndex = -1; // เพื่อไม่ให้เลือกมุมเดิมซ้ำๆ
+
+        // ฟังก์ชันสำหรับคำนวณตำแหน่งใหม่ของปุ่มให้หลบหนีไปมุม
+        document.body.addEventListener('mousemove', (e) => {
+            const buttonRect = handsomeButton.getBoundingClientRect();
+
+            // ตำแหน่งเมาส์ใน viewport
+            const mouseX = e.clientX;
+            const mouseY = e.clientY;
+
+            // จุดศูนย์กลางของปุ่ม
+            const buttonCenterX = buttonRect.left + buttonRect.width / 2;
+            const buttonCenterY = buttonRect.top + buttonRect.height / 2;
+
+            // ระยะห่างจากเมาส์ถึงจุดศูนย์กลางของปุ่ม
+            const distanceX = mouseX - buttonCenterX;
+            const distanceY = mouseY - buttonCenterY;
+
+            // ระยะปลอดภัย (เพื่อให้เมาส์ไม่โดนปุ่ม + ระยะเผื่อ)
+            const safeDistance = Math.max(buttonRect.width / 2, buttonRect.height / 2) + 60; // เพิ่มระยะเผื่อเป็น 60px ให้หลบได้ดีขึ้น
+
+            // ถ้าเมาส์อยู่ใกล้ปุ่มเกินไป ให้ขยับปุ่มออกไป
+            if (Math.abs(distanceX) < safeDistance && Math.abs(distanceY) < safeDistance) {
+                // สุ่มเลือกมุมใหม่ที่ไม่ใช่มุมเดิม
+                let newCornerIndex;
+                do {
+                    newCornerIndex = Math.floor(Math.random() * cornerPositions.length);
+                } while (newCornerIndex === lastCornerIndex);
+                lastCornerIndex = newCornerIndex;
+
+                const newPosition = cornerPositions[newCornerIndex];
+
+                // รีเซ็ตตำแหน่งเดิมที่อาจถูกตั้งค่าไว้
+                handsomeButton.style.left = 'auto';
+                handsomeButton.style.right = 'auto';
+                handsomeButton.style.top = 'auto';
+                handsomeButton.style.bottom = 'auto';
+
+                // ตั้งค่าตำแหน่งใหม่
+                if (newPosition.left !== undefined) handsomeButton.style.left = `${newPosition.left}px`;
+                if (newPosition.right !== undefined) handsomeButton.style.right = `${newPosition.right}px`;
+                if (newPosition.top !== undefined) handsomeButton.style.top = `${newPosition.top}px`;
+                if (newPosition.bottom !== undefined) handsomeButton.style.bottom = `${newPosition.bottom}px`;
+
+                handsomeButton.style.transform = newPosition.transform;
+            }
+        });
+
+        // ทำให้ปุ่มกลับไปที่เดิมเมื่อเมาส์ออกจากพื้นที่ "หน้าจอ" (หรือเมื่อเราคลิกปุ่มอื่นๆ)
+        document.body.addEventListener('mouseleave', () => {
+             resetHandsomeButtonPosition();
+        });
+
+
+        // ฟังก์ชันสำหรับรีเซ็ตตำแหน่งปุ่ม "หล่อ"
+        function resetHandsomeButtonPosition() {
+            handsomeButton.style.left = initialButtonLeft;
+            handsomeButton.style.top = 'auto';
+            handsomeButton.style.bottom = `${initialButtonBottom}px`;
+            handsomeButton.style.transform = initialButtonTransform;
+        }
+
+        // ฟังก์ชันเดิมสำหรับการแสดง popup
+        function showPopup(type) {
+            let popupId = type === 'not-handsome' ? 'notHandsomePopup' : 'handsomePopup';
+            document.getElementById(popupId).classList.add('show');
+            // เมื่อ popup แสดง เราต้องการให้ปุ่มกลับไปที่เดิม
+            resetHandsomeButtonPosition();
+        }
+
+        function hidePopup(type) {
+            let popupId = type === 'not-handsome' ? 'notHandsomePopup' : 'handsomePopup';
+            document.getElementById(popupId).classList.remove('show');
+        }
+
+        // --- เพิ่มส่วนสำหรับเล่นเสียงเพลงตรงนี้ ---
+        function playMusic() {
+            const audio = new Audio('music.mp3'); // สร้าง Audio object ใหม่ทุกครั้ง
+            audio.play().catch(e => console.error("Error playing audio:", e)); // เล่นเสียงและดักจับ error หากมี
+        }
+
+        // ฟังก์ชันสำหรับจัดการเมื่อคลิกปุ่ม "เอ๋อ"
+        function handleNotHandsomeClick() {
+            showPopup('not-handsome'); // แสดง popup "T_T"
+            playMusic(); // เล่นเพลง
+        }
+        // --- สิ้นสุดการเพิ่มส่วนสำหรับเล่นเสียงเพลง ---
+    </script>
+</body>
+</html>
